@@ -15,10 +15,15 @@ export const fetchMovies = createAsyncThunk(
     if (rating) query += `&imdbRating=${rating}`;
 
     const response = await axios.get(`${BASE_URL}${query}`);
-    
+
     return (response.data.Search || []).map((movie) => ({
-      ...movie,
-      isFavorite: false, // ✅ Initialize with isFavorite flag
+      imdbID: movie.imdbID,
+      Title: movie.Title?.trim() || "Unknown Title", // ✅ Fix title formatting
+      Year: movie.Year?.trim() || "Unknown Year", // ✅ Fix year formatting
+      Poster: movie.Poster && movie.Poster !== "N/A" 
+        ? movie.Poster 
+        : "/no-poster.jpg", // ✅ Handle missing posters
+      isFavorite: false, 
     }));
   }
 );
@@ -35,12 +40,10 @@ const movieSlice = createSlice({
       state.filters = { ...state.filters, ...action.payload };
     },
     addFavorite: (state, action) => {
-      const movie = { ...action.payload, isFavorite: true }; // ✅ Ensure isFavorite is set
+      const movie = { ...action.payload, isFavorite: true };
       if (!state.favorites.find((fav) => fav.imdbID === movie.imdbID)) {
         state.favorites.push(movie);
       }
-
-      // ✅ Update movies array to reflect favorite status
       state.movies = state.movies.map((m) =>
         m.imdbID === movie.imdbID ? { ...m, isFavorite: true } : m
       );
@@ -49,8 +52,6 @@ const movieSlice = createSlice({
       state.favorites = state.favorites.filter(
         (movie) => movie.imdbID !== action.payload
       );
-
-      // ✅ Update movies array to remove favorite status
       state.movies = state.movies.map((m) =>
         m.imdbID === action.payload ? { ...m, isFavorite: false } : m
       );
